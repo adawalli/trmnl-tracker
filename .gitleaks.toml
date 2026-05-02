@@ -1,0 +1,25 @@
+title = "trmnl-tracker gitleaks config"
+
+# Extend the default ruleset; add an allowlist for documentation placeholders.
+[extend]
+useDefault = true
+
+[[rules]]
+id = "curl-auth-header"
+[rules.allowlist]
+description = "Documentation placeholders are not real secrets"
+regexes = [
+  "YOUR_SHARED_SECRET",
+  "YOUR_UUID_HERE",
+]
+
+[allowlist]
+description = "Global allowlist for placeholder strings"
+regexes = [
+  "YOUR_SHARED_SECRET",
+  "YOUR_UUID_HERE",
+]
+paths = [
+  '''\.gitleaks\.toml''',
+  '''MAINTAINER\.local\.md''',
+]

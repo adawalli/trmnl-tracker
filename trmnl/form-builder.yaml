@@ -1,0 +1,15 @@
+- keyname: about
+  field_type: author_bio
+  name: About This Plugin
+  description: >
+    TRMNL order queue tracker. Polls trmnl.com/order-tracker for your
+    queue position through a secured Cloudflare Worker API.
+  category: life,personal
+  learn_more_url: https://trmnl.com/order-tracker
+
+- keyname: order_number
+  field_type: string
+  name: Order Number
+  description: Your TRMNL order number from the order confirmation email.
+  placeholder: "12345"
+  optional: false

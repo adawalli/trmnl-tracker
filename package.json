@@ -1,0 +1,15 @@
+{
+  "name": "trmnl-tracker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx wrangler dev",
+    "deploy": "npx wrangler deploy",
+    "preview:trmnl": "bun scripts/trmnl-preview.ts"
+  },
+  "devDependencies": {
+    "liquidjs": "^10.25.7",
+    "wrangler": "^4.84.1"
+  }
+}
