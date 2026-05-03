@@ -7,4 +7,8 @@ layouts display.
 
 {% assign orders_ahead = queue | minus: 1 %}
 {% assign orders_behind = outstanding_orders | minus: queue %}
-{% assign pct_ahead = queue | times: 100.0 | divided_by: outstanding_orders %}
+{% if outstanding_orders > 0 %}
+  {% assign pct_ahead = queue | times: 100.0 | divided_by: outstanding_orders %}
+{% else %}
+  {% assign pct_ahead = 0 %}
+{% endif %}

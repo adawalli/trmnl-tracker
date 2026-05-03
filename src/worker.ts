@@ -32,35 +32,45 @@ async function isAuthorized(request: Request, env: Env): Promise<boolean> {
   }
 }
 
+const FETCH_TIMEOUT_MS = 10_000;
+
 async function fetchQueue(orderNumber: string): Promise<{ queue: number; outstanding_orders: number }> {
-  const pageRes = await fetch("https://trmnl.com/order-tracker");
-  const html = await pageRes.text();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
-  const tokenMatch = html.match(/name="authenticity_token"\s+value="([^"]+)"/);
-  if (!tokenMatch) throw new Error("CSRF token not found");
+  try {
+    const pageRes = await fetch("https://trmnl.com/order-tracker", { signal: controller.signal });
+    const html = await pageRes.text();
 
-  const cookie = pageRes.headers.get("set-cookie") ?? "";
+    const tokenMatch = html.match(/name="authenticity_token"\s+value="([^"]+)"/);
+    if (!tokenMatch) throw new Error("CSRF token not found");
 
-  const params = new URLSearchParams();
-  params.append("authenticity_token", tokenMatch[1]);
-  params.append("order_trackers[order_number]", orderNumber);
+    const cookie = pageRes.headers.get("set-cookie") ?? "";
 
-  const res = await fetch("https://trmnl.com/order_trackers", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "Accept": "application/json",
-      "Cookie": cookie,
-    },
-    body: params.toString(),
-  });
+    const params = new URLSearchParams();
+    params.append("authenticity_token", tokenMatch[1]);
+    params.append("order_trackers[order_number]", orderNumber);
 
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    throw new Error(`Order tracker returned ${res.status}: ${detail}`);
+    const res = await fetch("https://trmnl.com/order_trackers", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "application/json",
+        "Cookie": cookie,
+      },
+      body: params.toString(),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      throw new Error(`Order tracker returned ${res.status}: ${detail}`);
+    }
+
+    return res.json();
+  } finally {
+    clearTimeout(timeout);
   }
-
-  return res.json();
 }
 
 function jsonError(message: string, status: number): Response {

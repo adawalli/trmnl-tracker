@@ -41,6 +41,7 @@ Paste each into its matching tab in the TRMNL Markup editor. `scripts/trmnl-prev
 ## Environment
 
 - Worker config: `CLERK_DOMAIN` is set in `wrangler.jsonc` vars (public; the OAuth `iss` and JWKS host). `order_number` is provided per-request in the POST body, not in config. No Worker secrets — auth is delegated to Clerk.
+- Clerk instance must be dedicated to this plugin. Clerk OAuth tokens omit the `aud` claim, so `isAuthorized` only checks issuer + signature. Any JWT issued by the configured Clerk instance (for any OAuth Application registered there) will be accepted, so don't share the Clerk instance with unrelated apps.
 - Script config: `.env` with `TRMNL_ORDER_NUMBER` and `TRMNL_WEBHOOK_URL` (see `.env.example`)
 - Wrangler auth: OAuth-based (`npx wrangler whoami` to verify)
 - Maintainer-only operational details (account ID, plugin UUID, deployed WAF rules, Clerk OAuth Application credentials) live in `MAINTAINER.local.md` (gitignored)
