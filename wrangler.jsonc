@@ -2,10 +2,8 @@
   "name": "trmnl-order-tracker",
   "main": "src/worker.ts",
   "compatibility_date": "2024-12-01",
-  "secrets": {
-    "required": [
-      "TRMNL_POLL_TOKEN"
-    ]
+  "vars": {
+    "CLERK_DOMAIN": "https://profound-caribou-36.clerk.accounts.dev"
   },
   "workers_dev": false,
   "routes": [

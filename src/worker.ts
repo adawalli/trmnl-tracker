@@ -1,5 +1,35 @@
+import * as jose from "jose";
+
 interface Env {
-  TRMNL_POLL_TOKEN: string;
+  CLERK_DOMAIN: string;
+}
+
+class BadRequestError extends Error {}
+
+let jwks: ReturnType<typeof jose.createRemoteJWKSet> | null = null;
+let jwksDomain: string | null = null;
+
+function getJWKS(domain: string) {
+  if (jwks && jwksDomain === domain) return jwks;
+  jwks = jose.createRemoteJWKSet(new URL(`${domain}/.well-known/jwks.json`));
+  jwksDomain = domain;
+  return jwks;
+}
+
+async function isAuthorized(request: Request, env: Env): Promise<boolean> {
+  const auth = request.headers.get("authorization");
+  if (!auth?.startsWith("Bearer ") || !env.CLERK_DOMAIN) return false;
+
+  try {
+    await jose.jwtVerify(auth.slice(7), getJWKS(env.CLERK_DOMAIN), {
+      issuer: env.CLERK_DOMAIN,
+      algorithms: ["RS256"],
+    });
+    return true;
+  } catch (err) {
+    console.error("jwt verify failed", err);
+    return false;
+  }
 }
 
 async function fetchQueue(orderNumber: string): Promise<{ queue: number; outstanding_orders: number }> {
@@ -43,16 +73,16 @@ async function readOrderNumber(request: Request): Promise<string> {
   try {
     body = await request.json();
   } catch {
-    throw new Error("Request body must be valid JSON");
+    throw new BadRequestError("Request body must be valid JSON");
   }
 
   if (!body || typeof body !== "object" || !("order_number" in body)) {
-    throw new Error("order_number is required");
+    throw new BadRequestError("order_number is required");
   }
 
   const orderNumber = String((body as { order_number: unknown }).order_number).trim();
   if (!/^\d+$/.test(orderNumber)) {
-    throw new Error("order_number must contain only digits");
+    throw new BadRequestError("order_number must contain only digits");
   }
 
   return orderNumber;
@@ -70,11 +100,7 @@ export default {
       return jsonError("Method not allowed", 405);
     }
 
-    if (!env.TRMNL_POLL_TOKEN) {
-      return jsonError("TRMNL_POLL_TOKEN not configured", 500);
-    }
-
-    if (request.headers.get("x-trmnl-token") !== env.TRMNL_POLL_TOKEN) {
+    if (!(await isAuthorized(request, env))) {
       return jsonError("Unauthorized", 401);
     }
 
@@ -89,7 +115,7 @@ export default {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      const status = message.startsWith("order_number") || message.includes("valid JSON") ? 400 : 502;
+      const status = err instanceof BadRequestError ? 400 : 502;
       return jsonError(message, status);
     }
   },
