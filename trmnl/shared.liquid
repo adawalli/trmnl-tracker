@@ -1,0 +1,10 @@
+{% comment %}
+TRMNL Order Queue Tracker - SHARED markup.
+Paste into the plugin's "Shared" markup tab. TRMNL prepends this to every
+view layout before rendering. Defines the derived metrics that all four
+layouts display.
+{% endcomment %}
+
+{% assign orders_ahead = queue | minus: 1 %}
+{% assign orders_behind = outstanding_orders | minus: queue %}
+{% assign pct_ahead = queue | times: 100.0 | divided_by: outstanding_orders %}

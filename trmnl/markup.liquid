@@ -1,13 +1,12 @@
 {% comment %}
 Markup for the TRMNL Order Queue Tracker private plugin (FULL view).
-Paste into the plugin's Markup tab in your TRMNL dashboard.
-Merge variables come from scripts/poll-order-queue.ts.
+Paste into the plugin's "Full" markup tab in your TRMNL dashboard.
+Merge variables come from src/worker.ts (production polling) or
+scripts/poll-order-queue.ts (manual webhook). Derived metrics are
+defined in trmnl/shared.liquid.
 
 Iterate locally: `bun run preview:trmnl` then open http://localhost:3937.
 {% endcomment %}
-
-{% assign pct = queue | times: 100.0 | divided_by: outstanding_orders %}
-{% assign pct_done = 100.0 | minus: pct %}
 
 <div class="layout layout--col gap--large">
 
@@ -24,8 +23,8 @@ Iterate locally: `bun run preview:trmnl` then open http://localhost:3937.
     <div class="item">
       <div class="meta"></div>
       <div class="content">
-        <span class="value value--large" data-value-fit="true">{{ queue | number }}</span>
-        <span class="label">Queue position</span>
+        <span class="value value--large" data-value-fit="true">{{ orders_ahead | number }}</span>
+        <span class="label">Orders ahead of you</span>
       </div>
     </div>
     <div class="item">
@@ -38,23 +37,23 @@ Iterate locally: `bun run preview:trmnl` then open http://localhost:3937.
     <div class="item">
       <div class="meta"></div>
       <div class="content">
-        <span class="value value--large" data-value-fit="true">{{ pct_done | round: 1 }}%</span>
-        <span class="label">Through the queue</span>
+        <span class="value value--large" data-value-fit="true">{{ pct_ahead | round: 1 }}%</span>
+        <span class="label">Of queue ahead</span>
       </div>
     </div>
   </div>
 
   <div class="divider"></div>
 
-  <div class="columns">
-    <div class="column">
-      <div style="width: 100%; height: 24px; background: #e5e5e5; border-radius: 4px; overflow: hidden;">
-        <div style="width: {{ pct_done }}%; height: 100%; background: #111;"></div>
+  <div class="progress">
+    <div class="progress-bar progress-bar--large progress-bar--emphasis-3">
+      <div class="track">
+        <div class="fill" style="width: {{ pct_ahead }}%;"></div>
       </div>
-      <div style="display: flex; justify-content: space-between; margin-top: 4px;">
-        <span class="label label--small">{{ outstanding_orders | minus: queue }} shipped</span>
-        <span class="label label--small">{{ queue }} remaining</span>
-      </div>
+    </div>
+    <div class="flex flex--between">
+      <span class="label label--small">{{ orders_ahead | number }} ahead</span>
+      <span class="label label--small">{{ orders_behind | number }} behind</span>
     </div>
   </div>
 

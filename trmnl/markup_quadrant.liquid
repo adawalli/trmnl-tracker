@@ -1,0 +1,18 @@
+{% comment %}
+TRMNL Order Queue Tracker - QUADRANT view (400x240).
+Paste into the plugin's "Quadrant" markup tab.
+Derived metrics (orders_ahead, pct_ahead) are defined in trmnl/shared.liquid.
+{% endcomment %}
+
+<div class="layout layout--col gap--small">
+  <div class="markdown gap--small">
+    <span class="label">Order #{{ order_number }}</span>
+  </div>
+  <div class="content">
+    <span class="value value--large" data-value-fit="true">{{ orders_ahead | number }}</span>
+    <span class="label">Orders ahead of you</span>
+  </div>
+  <div class="content">
+    <span class="label label--small">{{ pct_ahead | round: 0 }}% of queue ahead · {{ outstanding_orders | number }} total</span>
+  </div>
+</div>
