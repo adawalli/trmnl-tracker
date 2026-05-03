@@ -3,9 +3,11 @@
   name: About This Plugin
   description: >
     TRMNL order queue tracker. Polls trmnl.com/order-tracker for your
-    queue position through a secured Cloudflare Worker API.
+    queue position through a secured Cloudflare Worker API. Open source -
+    fork it, deploy your own, contribute back.
   category: life,personal
-  learn_more_url: https://trmnl.com/order-tracker
+  learn_more_url: https://github.com/adawalli/trmnl-tracker
+  github_url: https://github.com/adawalli/trmnl-tracker
 
 - keyname: order_number
   field_type: string

@@ -2,21 +2,17 @@
 
 Where this project is, where it's going, and how you can fit it to your own setup.
 
-## Now: single-user, static token
+## Now: multi-user via Clerk OAuth
 
-The plugin is built around one user (the maintainer's order). One Cloudflare Worker, one shared `TRMNL_POLL_TOKEN`, one TRMNL plugin instance. If you want it for yourself today, fork the repo, deploy your own Worker to your own Cloudflare account, and configure your TRMNL private plugin to point at it. The whole setup is in [`README.md`](./README.md#setup-for-your-own-deployment).
+Authentication is delegated to [Clerk](https://clerk.com) acting as a hosted OAuth 2.0 provider:
 
-## Next: multi-user via OAuth
+- Clerk runs the sign-in UI, Google IdP integration, consent screen, token issuance, and refresh-token rotation.
+- TRMNL's private-plugin OAuth toggle handles the client side - paste your Clerk OAuth Application's `client_id` and `client_secret`, finish consent once, and TRMNL polls with `Authorization: Bearer {{ oauth_access_token }}`.
+- The Worker is a pure resource server: it verifies each JWT against Clerk's JWKS at `${CLERK_DOMAIN}/.well-known/jwks.json` and checks the `iss` claim. No per-user state on the Worker side.
 
-Single-user with a shared static token doesn't scale - every additional user shares the same secret with no way to revoke a single one. The plan is to make the Worker its own OAuth 2.0 server using the Authorization Code flow:
+To run this for yourself, fork the repo, create a Clerk app + OAuth Application, deploy the Worker to your Cloudflare account, and point a private TRMNL plugin at it. Full steps are in [`README.md`](./README.md#setup-for-your-own-deployment).
 
-- `GET  /oauth/authorize` and `POST /oauth/token` issue per-user JWT access tokens and refresh tokens (refresh tokens stored in Cloudflare KV so they can be revoked).
-- `POST /order-queue` switches from `x-trmnl-token` to `Authorization: Bearer <jwt>` and reads the order number from the JWT claims.
-- TRMNL's private plugin OAuth toggle handles the client side - paste a `client_id` and `client_secret`, complete the consent once, and TRMNL polls with `Authorization: Bearer {{ oauth_access_token }}`.
-
-This is a prerequisite for the marketplace listing below.
-
-## Later: TRMNL marketplace listing
+## Next: TRMNL marketplace listing
 
 Once the OAuth path is solid and the UX is polished, the goal is to submit this through TRMNL's plugin marketplace so users can install it from the store rather than self-hosting a Worker. End users would click "Install", connect their TRMNL account through OAuth, type their order number, and start seeing queue position on their device.
 
@@ -37,7 +33,7 @@ Once the OAuth path is solid and the UX is polished, the goal is to submit this 
 Issues and PRs welcome, especially for:
 
 - Liquid template polish (alternate layouts, half/quad views).
-- Help getting the OAuth migration over the line.
+- Marketplace-listing prep (the architectural shift from private-plugin OAuth client to TRMNL Third-Party plugin server).
 - Documentation improvements - if your fork ran into a snag the README didn't cover, a PR fixing it helps the next person.
 
 Avoid contributing changes that bake in deployment-specific assumptions (a particular domain, a particular Cloudflare account ID, a particular order number).
