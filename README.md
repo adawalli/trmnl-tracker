@@ -43,7 +43,7 @@ Source: `src/worker.ts`. Handles the CSRF dance and returns clean JSON merge var
 
 **Endpoint shape**:
 - Method: `POST`
-- Required header: `x-trmnl-token: <shared secret>`
+- Required header: `Authorization: Bearer <clerk-issued JWT>`
 - Body: JSON with a numeric `order_number`
 - Response shape:
 
@@ -59,30 +59,18 @@ Source: `src/worker.ts`. Handles the CSRF dance and returns clean JSON merge var
 **Config** (`wrangler.jsonc`):
 - Custom domain route on the deploying account's zone
 - `workers_dev` disabled so the Worker is exposed only through the custom domain
-- `TRMNL_POLL_TOKEN` declared under `secrets.required`
+- `CLERK_DOMAIN` var (public; matches the `iss` claim in JWTs the Worker accepts)
 
-**Secret upload** - generate a long random token (e.g. `openssl rand -hex 32`), store it somewhere outside this repo, and upload via:
-
-```bash
-npx wrangler secret put TRMNL_POLL_TOKEN
-# paste the token at the prompt, or pipe from a file:
-# npx wrangler secret put TRMNL_POLL_TOKEN < /path/to/token-file
-```
-
-For local development, create an untracked `.dev.vars`:
-
-```bash
-TRMNL_POLL_TOKEN=YOUR_SHARED_SECRET
-```
+The Worker verifies each request's bearer token against Clerk's JWKS at `${CLERK_DOMAIN}/.well-known/jwks.json` and checks the `iss` claim. There are no Worker secrets; auth is fully delegated to Clerk.
 
 **Local dev**:
 
 ```bash
 bun install
 npx wrangler dev
-# then:
+# obtain a test JWT from Clerk (Sessions in dashboard, or via Clerk Backend API), then:
 curl http://localhost:8787/order-queue \
-  -H 'x-trmnl-token: YOUR_SHARED_SECRET' \
+  -H "Authorization: Bearer ${CLERK_JWT}" \
   -H 'content-type: application/json' \
   -d '{"order_number":"12345"}'
 ```
@@ -99,10 +87,11 @@ npx wrangler deploy
 - **Polling URL**: your deployed Worker URL (e.g. `https://your-subdomain.your-domain.tld/order-queue`)
 - **HTTP Method**: POST
 - **Refresh rate**: Every 15 mins
+- **OAuth**: enable "OAuth Authentication" on the plugin and configure it to point at your Clerk instance (see [Setup for your own deployment](#setup-for-your-own-deployment)). TRMNL handles the authorization-code dance and refresh-token rotation; your Worker just verifies the JWT it polls with.
 - **Polling headers** (query-string format on the plugin settings page, not JSON):
 
 ```
-x-trmnl-token=YOUR_SHARED_SECRET&content-type=application/json
+Authorization=Bearer {{ oauth_access_token }}&content-type=application/json
 ```
 
 - **Polling body**:
@@ -115,13 +104,23 @@ x-trmnl-token=YOUR_SHARED_SECRET&content-type=application/json
 
 - **Order number field** (form builder): the numeric order number from your TRMNL order confirmation email.
 
-## Liquid template
+## Liquid templates
 
-`trmnl/markup.liquid` is the device display template. Paste it into the plugin's Markup tab. Shows queue position, total outstanding orders, percent through the queue, and a progress bar.
+The TRMNL marketplace requires a markup variant for each layout the plugin supports. There's one Liquid file per variant; paste each into the corresponding tab in the plugin's Markup editor:
+
+| File | TRMNL tab | Dimensions |
+|---|---|---|
+| `trmnl/markup.liquid` | Full | 800x480 |
+| `trmnl/markup_half_horizontal.liquid` | Half horizontal | 800x240 |
+| `trmnl/markup_half_vertical.liquid` | Half vertical | 400x480 |
+| `trmnl/markup_quadrant.liquid` | Quadrant | 400x240 |
+| `trmnl/shared.liquid` | Shared | (prepended to each view; defines the derived metrics) |
+
+All four show the same primary metric: **orders ahead of you** (the actionable countdown to fulfillment), with progressively less context as the layout shrinks. The percent value (`Of queue ahead`) is the share of outstanding orders at-or-ahead of your position; it drops toward 0% as you advance.
 
 `trmnl/form-builder.yaml` defines the plugin's settings metadata. Paste it into the form builder field on the plugin settings page.
 
-**Local preview**:
+**Local preview** renders all four layouts on one page at their actual e-ink dimensions:
 
 ```bash
 bun run preview:trmnl
@@ -130,24 +129,34 @@ bun run preview:trmnl
 
 ## Setup for your own deployment
 
-1. Fork the repo and clone your fork.
-2. `bun install`.
-3. **Cloudflare**: pick a custom domain you control on Cloudflare, edit `wrangler.jsonc`'s `routes[0].pattern` to match your domain, and `npx wrangler deploy`.
-4. **Token**: generate a random shared secret (`openssl rand -hex 32`) and upload it to your Worker (`npx wrangler secret put TRMNL_POLL_TOKEN`).
-5. **TRMNL plugin**: in your TRMNL account, create a private plugin with the polling config above. Paste your token into the polling headers and your Worker URL into the polling URL field.
-6. **Markup + form builder**: paste `trmnl/markup.liquid` into the plugin's Markup tab and `trmnl/form-builder.yaml` into the form builder field.
-7. **Hardening** (recommended, optional): add the Cloudflare protections described below.
+1. **Fork + install**: fork the repo, clone your fork, `bun install`.
+2. **Clerk**: create a free Clerk application (clerk.com).
+   - Enable Google as a Social Connection (Configure → SSO Connections → Google). Clerk's hosted credentials are fine for low volume.
+   - Create an OAuth Application (Configure → OAuth Applications → New OAuth App). Set the Callback URL to TRMNL's auto-generated OAuth Redirect URL (visible in the plugin's Configure OAuth dialog). Scopes: `email profile openid`.
+   - Note the OAuth App's `client_id`, `client_secret`, and your Clerk instance domain (e.g. `https://my-app.clerk.accounts.dev`).
+3. **Cloudflare Worker**: edit `wrangler.jsonc` - set `routes[0].pattern` to a custom domain you control, and `vars.CLERK_DOMAIN` to your Clerk instance domain. Then `npx wrangler deploy`.
+4. **TRMNL plugin**: create a private plugin in your TRMNL account with the polling config above.
+   - Toggle **Enable OAuth Authentication** on. In the Configure OAuth dialog:
+     - Authorization URL: `${CLERK_DOMAIN}/oauth/authorize`
+     - Token URL: `${CLERK_DOMAIN}/oauth/token`
+     - Client ID / Client Secret: from your Clerk OAuth Application
+     - Scopes: `email profile openid`
+     - PKCE: enable (defense in depth)
+   - Set the polling URL to your Worker, polling headers to `Authorization=Bearer {{ oauth_access_token }}&content-type=application/json`, polling body to `{"order_number":"{{ order_number }}"}`.
+   - Click **Connect** - Clerk hosts the Google sign-in + consent screen, then redirects back to TRMNL with a code TRMNL exchanges for tokens.
+5. **Markup + form builder**: paste each file in `trmnl/` into its corresponding tab in the plugin's Markup editor (Full, Half horizontal, Half vertical, Quadrant, and Shared per the table above), and paste `trmnl/form-builder.yaml` into the form builder field.
+6. **Hardening** (recommended, optional): add the Cloudflare protections described below.
 
 ## Cloudflare hardening
 
 The maintainer-hosted Worker sits behind a layered defense at the Cloudflare edge:
 
-- A WAF custom rule blocks any request to `/order-queue` that's missing the expected auth header (so random scanners and `GET /` bots never reach the Worker).
+- A WAF custom rule blocks any non-POST or any POST to `/order-queue` that's missing an `Authorization` header (so random scanners and `GET /` bots never reach the Worker).
 - A second WAF rule allowlists only the ASN(s) that TRMNL is known to poll from, blocking everything else at the edge.
-- A rate-limit rule caps requests per IP per minute and keys on the path so a single source can't burn through Worker invocations.
+- A rate-limit rule caps requests per source IP keyed on the path so a single source can't burn through Worker invocations.
 - Bot Fight Mode is **off** on the zone (see below for why).
 
-The Worker itself validates the token value as a final layer. Specific rule expressions are deliberately omitted from this README; deploy with whatever expressions and thresholds suit your zone.
+The Worker itself verifies the JWT signature against Clerk's JWKS as a final layer. Specific rule expressions are deliberately omitted from this README; deploy with whatever expressions and thresholds suit your zone.
 
 ### Bot Fight Mode (must stay off)
 
@@ -163,7 +172,7 @@ The custom WAF rule plus the Worker's token check do the actual security work. B
 
 ## Multi-user / OAuth
 
-The current design is single-user (one shared `TRMNL_POLL_TOKEN`). The plan to support multiple users is to switch the Worker into an OAuth 2.0 server (Authorization Code flow + JWT access tokens + KV-backed refresh tokens) and have TRMNL's private plugin OAuth toggle handle the client side. See [ROADMAP.md](./ROADMAP.md#next-multi-user-via-oauth) for details.
+Authentication is delegated to [Clerk](https://clerk.com) acting as a hosted OAuth 2.0 provider. Clerk runs the sign-in UI, Google IdP integration, consent screen, token issuance, and refresh-token rotation. TRMNL's private-plugin OAuth toggle does the client-side dance. The Worker is a pure resource server: on every poll it verifies the bearer JWT against Clerk's JWKS and checks the `iss` claim. There is no per-user state on the Worker side - the JWT identifies the user and the form-builder's `order_number` field carries their data. See [ROADMAP.md](./ROADMAP.md) for the bigger picture.
 
 ## Capacity
 
