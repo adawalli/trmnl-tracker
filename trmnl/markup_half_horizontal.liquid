@@ -4,30 +4,29 @@ Paste into the plugin's "Half horizontal" markup tab.
 Derived metrics (orders_ahead, orders_behind, pct_ahead) are defined in trmnl/shared.liquid.
 {% endcomment %}
 
-<div class="layout layout--col gap--small">
+<div class="layout layout--col gap--space-between">
+  <div class="markdown gap--small">
+    <span class="title title--small">TRMNL Queue</span>
+    <span class="label label--small">Order #{{ order_number }}</span>
+  </div>
+
   <div class="columns">
     <div class="column">
-      <div class="markdown gap--small">
-        <span class="title title--small">TRMNL Queue</span>
-        <span class="label label--small">Order #{{ order_number }}</span>
+      <div class="content">
+        <span class="value value--large" data-value-type="number">{{ orders_ahead }}</span>
+        <span class="label">Orders ahead</span>
       </div>
     </div>
     <div class="column">
       <div class="content">
-        <span class="value value--large" data-value-fit="true">{{ orders_ahead | number }}</span>
-        <span class="label">Orders ahead of you</span>
-      </div>
-    </div>
-    <div class="column">
-      <div class="content">
-        <span class="value value--large" data-value-fit="true">{{ pct_ahead | round: 1 }}%</span>
+        <span class="value value--large">{{ pct_ahead | round: 1 }}%</span>
         <span class="label">Of queue ahead</span>
       </div>
     </div>
   </div>
 
   <div class="progress">
-    <div class="progress-bar progress-bar--xsmall progress-bar--emphasis-3">
+    <div class="progress-bar progress-bar--large progress-bar--emphasis-3">
       <div class="track">
         <div class="fill" style="width: {{ pct_ahead }}%;"></div>
       </div>
