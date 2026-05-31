@@ -25,7 +25,7 @@ Derived metrics (orders_ahead, orders_behind, pct_ahead) are defined in trmnl/sh
     </div>
   </div>
 
-  <div class="progress">
+  <div class="stretch-x">
     <div class="progress-bar progress-bar--large progress-bar--emphasis-3">
       <div class="track">
         <div class="fill" style="width: {{ pct_ahead }}%;"></div>
@@ -36,4 +36,10 @@ Derived metrics (orders_ahead, orders_behind, pct_ahead) are defined in trmnl/sh
       <span class="label label--small">{{ orders_behind | number }} behind</span>
     </div>
   </div>
+</div>
+
+<div class="title_bar">
+  <img class="image" src="https://trmnl.com/images/plugins/trmnl--render.svg" />
+  <span class="title">Order Queue</span>
+  <span class="instance">Updated {{ updated_at | date: "%b %-d, %-I:%M %P" }}</span>
 </div>

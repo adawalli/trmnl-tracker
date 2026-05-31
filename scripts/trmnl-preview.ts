@@ -23,7 +23,7 @@ async function renderView(view: (typeof VIEWS)[number], shared: string): Promise
   try {
     const liquidSrc = await Bun.file(view.path).text();
     const rendered = await engine.parseAndRender(shared + liquidSrc, previewData);
-    return `<div class="screen view view--${view.key}" style="width:${view.w}px;height:${view.h}px;">${rendered}</div>`;
+    return `<div class="screen" style="width:${view.w}px;height:${view.h}px;"><div class="view view--${view.key}">${rendered}</div></div>`;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return `<div class="screen-missing" style="width:${view.w}px;height:${view.h}px;"><pre>${msg}</pre></div>`;
@@ -43,16 +43,16 @@ const shell = (cards: string) => `<!DOCTYPE html>
   <style>
     body { margin: 0; padding: 24px; background: #f5f5f5; font-family: Inter, system-ui, sans-serif; }
     h1 { margin: 0 0 16px; font-size: 18px; font-weight: 600; }
-    .grid { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
-    .card { display: flex; flex-direction: column; gap: 8px; }
-    .card-label { font-size: 12px; color: #666; }
+    .preview-grid { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+    .preview-card { display: flex; flex-direction: column; gap: 8px; }
+    .preview-card-label { font-size: 12px; color: #666; }
     .screen, .screen-missing { box-shadow: 0 8px 32px rgba(0,0,0,0.12); background: #fff; overflow: hidden; }
     .screen-missing { display: flex; align-items: center; justify-content: center; color: #b00; font-size: 12px; padding: 12px; box-sizing: border-box; }
   </style>
 </head>
 <body class="environment trmnl">
   <h1>TRMNL Order Queue - all layouts</h1>
-  <div class="grid">${cards}</div>
+  <div class="preview-grid">${cards}</div>
 </body>
 </html>`;
 
@@ -61,7 +61,7 @@ Bun.serve({
   async fetch() {
     const shared = await Bun.file(SHARED_PATH).text().catch(() => "");
     const cards = await Promise.all(
-      VIEWS.map(async (v) => `<div class="card"><span class="card-label">${v.label} (${v.w}x${v.h})</span>${await renderView(v, shared)}</div>`)
+      VIEWS.map(async (v) => `<div class="preview-card"><span class="preview-card-label">${v.label} (${v.w}x${v.h})</span>${await renderView(v, shared)}</div>`)
     );
     return new Response(shell(cards.join("")), {
       headers: { "Content-Type": "text/html; charset=utf-8" },

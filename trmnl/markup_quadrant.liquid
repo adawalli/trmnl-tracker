@@ -16,3 +16,9 @@ Derived metrics (orders_ahead, pct_ahead) are defined in trmnl/shared.liquid.
     <span class="label label--small">{{ pct_ahead | round: 0 }}% of queue ahead · {{ outstanding_orders | number }} total</span>
   </div>
 </div>
+
+<div class="title_bar">
+  <img class="image" src="https://trmnl.com/images/plugins/trmnl--render.svg" />
+  <span class="title">Order Queue</span>
+  <span class="instance">Updated {{ updated_at | date: "%b %-d, %-I:%M %P" }}</span>
+</div>
