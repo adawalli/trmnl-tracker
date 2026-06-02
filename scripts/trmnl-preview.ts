@@ -6,10 +6,31 @@ const engine = new Liquid();
 const SHARED_PATH = "trmnl/shared.liquid";
 
 const VIEWS = [
-  { key: "full", path: "trmnl/markup.liquid", label: "Full", w: 800, h: 480 },
-  { key: "half_horizontal", path: "trmnl/markup_half_horizontal.liquid", label: "Half horizontal", w: 800, h: 240 },
-  { key: "half_vertical", path: "trmnl/markup_half_vertical.liquid", label: "Half vertical", w: 400, h: 480 },
-  { key: "quadrant", path: "trmnl/markup_quadrant.liquid", label: "Quadrant", w: 400, h: 240 },
+  { key: "full", path: "trmnl/markup.liquid", label: "Full" },
+  { key: "half_horizontal", path: "trmnl/markup_half_horizontal.liquid", label: "Half horizontal" },
+  { key: "half_vertical", path: "trmnl/markup_half_vertical.liquid", label: "Half vertical" },
+  { key: "quadrant", path: "trmnl/markup_quadrant.liquid", label: "Quadrant" },
+] as const;
+
+const TARGETS = [
+  {
+    key: "og",
+    label: "TRMNL OG",
+    screenClass: "screen screen--og screen--md screen--1bit",
+    sizes: { full: [800, 480], half_horizontal: [800, 240], half_vertical: [400, 480], quadrant: [400, 240] },
+  },
+  {
+    key: "x_landscape",
+    label: "TRMNL X Landscape",
+    screenClass: "screen screen--v2 screen--lg screen--4bit",
+    sizes: { full: [1040, 780], half_horizontal: [1040, 390], half_vertical: [520, 780], quadrant: [520, 390] },
+  },
+  {
+    key: "x_portrait",
+    label: "TRMNL X Portrait",
+    screenClass: "screen screen--v2 screen--lg screen--portrait screen--4bit",
+    sizes: { full: [780, 1040], half_horizontal: [780, 520], half_vertical: [390, 1040], quadrant: [390, 520] },
+  },
 ] as const;
 
 const previewData = {
@@ -19,14 +40,16 @@ const previewData = {
   updated_at: new Date().toISOString(),
 };
 
-async function renderView(view: (typeof VIEWS)[number], shared: string): Promise<string> {
+async function renderView(view: (typeof VIEWS)[number], target: (typeof TARGETS)[number], shared: string): Promise<string> {
+  const [w, h] = target.sizes[view.key];
+
   try {
     const liquidSrc = await Bun.file(view.path).text();
     const rendered = await engine.parseAndRender(shared + liquidSrc, previewData);
-    return `<div class="screen" style="width:${view.w}px;height:${view.h}px;"><div class="view view--${view.key}">${rendered}</div></div>`;
+    return `<div class="${target.screenClass}" style="width:${w}px;height:${h}px;"><div class="view view--${view.key}">${rendered}</div></div>`;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return `<div class="screen-missing" style="width:${view.w}px;height:${view.h}px;"><pre>${msg}</pre></div>`;
+    return `<div class="screen-missing" style="width:${w}px;height:${h}px;"><pre>${msg}</pre></div>`;
   }
 }
 
@@ -61,7 +84,12 @@ Bun.serve({
   async fetch() {
     const shared = await Bun.file(SHARED_PATH).text().catch(() => "");
     const cards = await Promise.all(
-      VIEWS.map(async (v) => `<div class="preview-card"><span class="preview-card-label">${v.label} (${v.w}x${v.h})</span>${await renderView(v, shared)}</div>`)
+      TARGETS.flatMap((target) =>
+        VIEWS.map(async (view) => {
+          const [w, h] = target.sizes[view.key];
+          return `<div class="preview-card"><span class="preview-card-label">${target.label} - ${view.label} (${w}x${h})</span>${await renderView(view, target, shared)}</div>`;
+        })
+      )
     );
     return new Response(shell(cards.join("")), {
       headers: { "Content-Type": "text/html; charset=utf-8" },

@@ -8,37 +8,37 @@ defined in trmnl/shared.liquid.
 Iterate locally: `bun run preview:trmnl` then open http://localhost:3937.
 {% endcomment %}
 
-<div class="layout layout--col gap--large">
+<div class="layout layout--col gap--large lg:gap--xlarge">
 
   <div class="columns">
     <div class="column">
       <div class="markdown gap--small">
-        <span class="title title--small">TRMNL Order Tracker</span>
-        <span class="label">Order #{{ order_number }}</span>
+        <span class="title title--small lg:title--base">TRMNL Order Tracker</span>
+        <span class="label lg:label--large">Order #{{ order_number }}</span>
       </div>
     </div>
   </div>
 
-  <div class="grid grid--cols-3">
+  <div class="grid grid--cols-3 lg:gap--xlarge portrait:grid--cols-1 portrait:gap--large lg:portrait:gap--xlarge">
     <div class="item">
       <div class="meta"></div>
       <div class="content">
-        <span class="value value--large" data-value-fit="true">{{ orders_ahead | number }}</span>
-        <span class="label">Orders ahead of you</span>
+        <span class="value value--large lg:value--xxlarge" data-value-fit="true">{{ orders_ahead | number }}</span>
+        <span class="label lg:label--large">Orders ahead of you</span>
       </div>
     </div>
     <div class="item">
       <div class="meta"></div>
       <div class="content">
-        <span class="value value--large" data-value-fit="true">{{ outstanding_orders | number }}</span>
-        <span class="label">Total outstanding</span>
+        <span class="value value--large lg:value--xlarge" data-value-fit="true">{{ outstanding_orders | number }}</span>
+        <span class="label lg:label--large">Total outstanding</span>
       </div>
     </div>
     <div class="item">
       <div class="meta"></div>
       <div class="content">
-        <span class="value value--large" data-value-fit="true">{{ pct_ahead | round: 1 }}%</span>
-        <span class="label">Of queue ahead</span>
+        <span class="value value--large lg:value--xlarge" data-value-fit="true">{{ pct_ahead | round: 1 }}%</span>
+        <span class="label lg:label--large">Of queue ahead</span>
       </div>
     </div>
   </div>
@@ -52,8 +52,8 @@ Iterate locally: `bun run preview:trmnl` then open http://localhost:3937.
       </div>
     </div>
     <div class="flex flex--between">
-      <span class="label label--small">{{ orders_ahead | number }} ahead</span>
-      <span class="label label--small">{{ orders_behind | number }} behind</span>
+      <span class="label label--small lg:label--large">{{ orders_ahead | number }} ahead</span>
+      <span class="label label--small lg:label--large">{{ orders_behind | number }} behind</span>
     </div>
   </div>
 
