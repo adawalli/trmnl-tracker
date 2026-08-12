@@ -27,6 +27,14 @@ describe("TRMNL view template structure", () => {
       expect(count(source, /<div\s+class="progress-bar(?:\s|")/g), view.file).toBe(view.hasProgress ? 1 : 0);
     }
   });
+
+  test("each supported view uses TRMNL X responsive classes", async () => {
+    for (const view of viewTemplates) {
+      const source = await Bun.file(view.file).text();
+
+      expect(source, view.file).toContain("lg:");
+    }
+  });
 });
 
 describe("TRMNL preview harness", () => {
@@ -38,5 +46,17 @@ describe("TRMNL preview harness", () => {
     expect(source).not.toContain('class="screen view');
     expect(source).toContain('class="preview-grid"');
     expect(source).toContain('class="preview-card"');
+  });
+
+  test("previews TRMNL OG and TRMNL X publishing targets", async () => {
+    const source = await Bun.file("scripts/trmnl-preview.ts").text();
+
+    expect(source).toContain("TRMNL OG");
+    expect(source).toContain("TRMNL X Landscape");
+    expect(source).toContain("TRMNL X Portrait");
+    expect(source).toContain("screen--md");
+    expect(source).toContain("screen--lg");
+    expect(source).toContain("screen--portrait");
+    expect(source).toContain("screen--4bit");
   });
 });
