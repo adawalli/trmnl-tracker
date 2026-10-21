@@ -9,10 +9,13 @@
     "preview:trmnl": "bun scripts/trmnl-preview.ts"
   },
   "devDependencies": {
-    "liquidjs": "^10.25.7",
-    "wrangler": "^4.84.1"
+    "liquidjs": "^10.27.2",
+    "wrangler": "^4.151.3"
   },
   "dependencies": {
     "jose": "^6.2.3"
+  },
+  "overrides": {
+    "undici": "^7.30.1"
   }
 }
