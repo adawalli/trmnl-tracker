@@ -9,7 +9,7 @@
     "preview:trmnl": "bun scripts/trmnl-preview.ts"
   },
   "devDependencies": {
-    "liquidjs": "^10.25.7",
+    "liquidjs": "^10.27.2",
     "wrangler": "^4.151.3"
   },
   "dependencies": {
