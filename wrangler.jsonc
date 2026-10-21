@@ -9,6 +9,7 @@
   "routes": [
     {
       "pattern": "trmnl.bytefit.io",
+      "zone_name": "bytefit.io",
       "custom_domain": true
     }
   ]
