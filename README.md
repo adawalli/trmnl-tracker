@@ -1,8 +1,11 @@
 # TRMNL Order Queue Tracker
 
+> [!WARNING]
+> **Retired.** This project is no longer maintained and the repo is archived. The hosted Worker at `trmnl.bytefit.io` is shut down, and the TRMNL recipe is being removed. The code stays here for reference. Fork it if you want to run your own.
+
 Displays your TRMNL order queue position on a TRMNL e-ink device via a private plugin.
 
-The maintainer-hosted instance lives at `https://trmnl.bytefit.io/order-queue`; you can fork the repo and deploy your own to wherever you like. See [ROADMAP.md](./ROADMAP.md) for the bigger picture.
+The maintainer-hosted instance at `https://trmnl.bytefit.io/order-queue` is shut down. You can fork the repo and deploy your own to wherever you like. See [ROADMAP.md](./ROADMAP.md) for the bigger picture.
 
 ## How it works
 
